@@ -1,0 +1,197 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Jvm的类的生命周期与双亲委派机制 | fly1zr</title><meta name="author" content="fly1zr"><meta name="copyright" content="fly1zr"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Jvm 之类的生命周期与双亲委派机制一、在JVM（Java Virtual Machine）中类的生命周期包含以下 5 个阶段(有时也被称为7个阶段)：1、加载​	加载阶段第一步是将&#x3D;&#x3D;类加载器&#x3D;&#x3D;根据类的全限定名通过不同渠道以二进制流的方式获取字节码信息。在此之后，jvm会将字节码信息保存到内存的方法区（InstanceKlass）中具体包括基本信息：如主">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jvm的类的生命周期与双亲委派机制">
+<meta property="og:url" content="http://fly1zr.cn/2025/03/26/Jvm%20%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/index.html">
+<meta property="og:site_name" content="fly1zr">
+<meta property="og:description" content="Jvm 之类的生命周期与双亲委派机制一、在JVM（Java Virtual Machine）中类的生命周期包含以下 5 个阶段(有时也被称为7个阶段)：1、加载​	加载阶段第一步是将&#x3D;&#x3D;类加载器&#x3D;&#x3D;根据类的全限定名通过不同渠道以二进制流的方式获取字节码信息。在此之后，jvm会将字节码信息保存到内存的方法区（InstanceKlass）中具体包括基本信息：如主">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://fly1zr.cn/img/%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE.jpg">
+<meta property="article:published_time" content="2025-03-26T15:35:00.000Z">
+<meta property="article:modified_time" content="2025-03-25T16:17:47.412Z">
+<meta property="article:author" content="fly1zr">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://fly1zr.cn/img/%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Jvm的类的生命周期与双亲委派机制",
+  "url": "http://fly1zr.cn/2025/03/26/Jvm%20%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/",
+  "image": "http://fly1zr.cn/img/%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE.jpg",
+  "datePublished": "2025-03-26T15:35:00.000Z",
+  "dateModified": "2025-03-25T16:17:47.412Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "fly1zr",
+      "url": "http://fly1zr.cn/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://fly1zr.cn/2025/03/26/Jvm%20%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin=""/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":true,"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Jvm的类的生命周期与双亲委派机制',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="web_bg" style="background: linear-gradient(20deg, #0062be, #925696, #cc426e, #fb0347);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 列表</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/双亲委派.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">fly1zr</span></a><a class="nav-page-title" href="/"><span class="site-name">Jvm的类的生命周期与双亲委派机制</span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 列表</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Jvm的类的生命周期与双亲委派机制</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-03-26T15:35:00.000Z" title="发表于 2025-03-26 23:35:00">2025-03-26</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-03-25T16:17:47.412Z" title="更新于 2025-03-26 00:17:47">2025-03-26</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">1.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>4分钟</span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="Jvm-之类的生命周期与双亲委派机制"><a href="#Jvm-之类的生命周期与双亲委派机制" class="headerlink" title="Jvm 之类的生命周期与双亲委派机制"></a>Jvm 之类的生命周期与双亲委派机制</h1><h2 id="一、在JVM（Java-Virtual-Machine）中类的生命周期包含以下-5-个阶段-有时也被称为7个阶段-："><a href="#一、在JVM（Java-Virtual-Machine）中类的生命周期包含以下-5-个阶段-有时也被称为7个阶段-：" class="headerlink" title="一、在JVM（Java Virtual Machine）中类的生命周期包含以下 5 个阶段(有时也被称为7个阶段)："></a>一、在JVM（Java Virtual Machine）中类的生命周期包含以下 5 个阶段(有时也被称为7个阶段)：</h2><h3 id="1、加载"><a href="#1、加载" class="headerlink" title="1、加载"></a>1、加载</h3><p>​	加载阶段第一步是将&#x3D;&#x3D;类加载器&#x3D;&#x3D;根据类的全限定名通过不同渠道以二进制流的方式获取字节码信息。在此之后，jvm会将字节码信息保存到内存的<strong>方法区（InstanceKlass）</strong>中具体包括<strong>基本信息</strong>：如主次版本号，本类与父类索引，接口字段方法属性计数等信息。<strong>常量池</strong>：例如字面量（字符串<code>hello</code>、基本类型常量<code>final int a=10</code>、和声明为final的常量）和符号引用（类和接口的全限定名<code>java/lang/Object</code>， 字段的名称和描述符 <code>name:Ljava/lang/String;</code>，方法的名称和描述符如<code>main([Ljava/lang/String;)V</code>）<br><strong>字段</strong>和<strong>方法、属性、虚方法表</strong>（用于实现多态）等信息。同时jvm还会再<strong>堆</strong>中生成一份与方法区帐数据类似的java.lang.Class对象（作用是在Java代码中获取类的信息以及存储静态字段数据）与方法区相关联。</p>
+<ul>
+<li><p><strong>目标</strong>：将 <code>.class</code> 文件读取到内存。</p>
+</li>
+<li><p><strong>过程</strong>：</p>
+<ul>
+<li>通过类加载器（<code>ClassLoader</code>）查找类的二进制数据（如文件、网络、JAR包等）。</li>
+<li>生成一个代表该类的 <code>java.lang.Class</code> 对象。</li>
+</ul>
+</li>
+</ul>
+<h3 id="2、链接"><a href="#2、链接" class="headerlink" title="2、链接"></a>2、链接</h3><p>链接阶段又分为三个阶段分别是<u><strong>验证</strong> 、<strong>准备</strong>与<strong>解析</strong></u>阶段，我们分别来说明<br>首先是  <strong>验证</strong>  阶段：</p>
+<p>主要包含四部分：<br>1.文件格式验证：如<code>0xcafebabe</code>的文件格式开头<br>2.元信息验证：例如类必须有父类<br>3.程序执行指令的语义验证：如方法执行到一半强行转到其他方法中<br>4.符号引用验证：如是否访问了其他类中的private的方法等</p>
+<p>之后是 <strong>准备</strong> 阶段：<br>为静态变量分配内存并设初始值（jdk8之后）如</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Test</span>()&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> value=<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> value2=<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>会在准备阶段给value变量value赋值为0（初始化阶段才会赋值）<br>但是若此静态变量被<code>final</code>关键字修饰，则直接会在准备阶段赋值即value2&#x3D;1。</p>
+<p>最后是 <strong>解析</strong> 阶段：<br>解析阶段主要是将常量池中的符号引用替换为直接引用。直接引用不再使用编号而是直接使用内存中的地址进行具体的数据访问。</p>
+<h3 id="3、初始化"><a href="#3、初始化" class="headerlink" title="3、初始化"></a>3、初始化</h3><p>在此阶段会执行<strong>静态代码块中的代码</strong>，并为<strong>静态变量赋值</strong>。<br>初始化阶段会执行字节码文件中<strong>clinit</strong>部分的字节码指令。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Test2</span>()&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> value3=<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">static</span>&#123;</span><br><span class="line">        value3=<span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String args[])</span>&#123;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>静态代码块会影响静态变量赋值的顺序，如上代码最终value3&#x3D;2，但若上述代码<strong>静态代码块</strong>和<strong>静态变量</strong>顺序调换则初始化阶段会将该变量初始化设值为1。</p>
+<p>以下几种是导致类<strong>会被初始化</strong>的方式：<br>1.访问一个类的静态变量或者静态方法（变量被final修饰且等号右边为常量不会初始化）<br>2.调用Class.forName(String className)<br>3.new一个该类的对象时<br>4.执行Main方法的当前类</p>
+<p>以下是几种<strong>不会被初始化</strong>的方式：<br>1.无静态代码块且无静态变量赋值语句<br>2.有静态变量声明但是没有赋值语句<br>3.静态变量使用final定义的，这类变量会在<strong>链接</strong>的<strong>准备</strong>阶段赋初值</p>
+<p>需要注意：直接访问父类的静态变量，不会触发子类的初始化<br>                   子类的初始化clinit调用志气，会优先调用父类的clinit初始化方法<br>                   数组的创建不会导致数组中元素的类进行初始化</p>
+<h3 id="4、使用"><a href="#4、使用" class="headerlink" title="4、使用"></a>4、使用</h3><p>类初始化完成之后，就可以在程序中使用这个类了。可以创建类的实例、调用类的方法、访问类的字段等。</p>
+<h3 id="5、卸载"><a href="#5、卸载" class="headerlink" title="5、卸载"></a>5、卸载</h3><p>当类不再被使用，并且满足一定条件时，JVM 会将类卸载，即回收类所占用的内存空间。类被卸载需要满足以下三个条件：</p>
+<ul>
+<li>该类的所有实例都已经被回收。</li>
+<li>加载该类的 <code>ClassLoader</code> 已经被回收。</li>
+<li>该类对应的 <code>java.lang.Class</code> 对象没有在任何地方被引用，无法在任何地方通过反射访问该类的方法。</li>
+</ul>
+<h2 id="二、双亲委派机制"><a href="#二、双亲委派机制" class="headerlink" title="二、双亲委派机制"></a>二、双亲委派机制</h2><p>首先要提到类加载器（ClassLoader）：是jvm提供给应用程序去实现获取类和接口字节码数据的技术。<br>    文件会通过类加载器二进制流的输入方式读取数据之后便可通过jvm调用<strong>本地接口</strong>（Java Native interface，允许Java调用其他语言编写的方法，主要调用jvm中的方法，这些方法使用C++编写）</p>
+<p>jdk8及之前，类加载器分为两类，一类是Java代码中实现的，一类是Jvm底层源码实现的（如HotSpot使用C++），底层实现的如<strong>启动类加载器（Bootstrap）</strong>。Java中的如<strong>扩展类加载器（Extension）和应用程序类加载器（Application）</strong>。</p>
+<p><strong>双亲委派机制：</strong>当一个类加载器收到加载类的任务时，会<strong>自底向上</strong>查找是否加载过，再<strong>由顶向下</strong>进行加载<br><img src="/../img/%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE.jpg" alt="alt text"></p>
+<p>当一个类收到了加载请求时，它是不会先自己去尝试加载的，而是委派给父类去完成。只有当父类加载器都反馈自己无法完成这个请求（也就是父类加载器都没有找到加载所需的 Class）时，子类加载器才会自行尝试加载。 </p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://fly1zr.cn">fly1zr</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://fly1zr.cn/2025/03/26/Jvm%20%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/">http://fly1zr.cn/2025/03/26/Jvm%20%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="http://fly1zr.cn" target="_blank">fly1zr</a>！</span></div></div><div class="tag_share"><div class="post-share"><div class="social-share" data-image="/img/%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2025/03/20/2025-3-20-%E7%AC%AC%E4%B8%80%E7%AF%87/" title="如何瞄准"><img class="cover" src="/img/1.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">如何瞄准</div></div><div class="info-2"><div class="info-item-1">论无畏契约如何科学的练枪</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">fly1zr</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/fly1zr" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:hanjz123123@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">瓦</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Jvm-%E4%B9%8B%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6"><span class="toc-number">1.</span> <span class="toc-text">Jvm 之类的生命周期与双亲委派机制</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%9C%A8JVM%EF%BC%88Java-Virtual-Machine%EF%BC%89%E4%B8%AD%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E5%8C%85%E5%90%AB%E4%BB%A5%E4%B8%8B-5-%E4%B8%AA%E9%98%B6%E6%AE%B5-%E6%9C%89%E6%97%B6%E4%B9%9F%E8%A2%AB%E7%A7%B0%E4%B8%BA7%E4%B8%AA%E9%98%B6%E6%AE%B5-%EF%BC%9A"><span class="toc-number">1.1.</span> <span class="toc-text">一、在JVM（Java Virtual Machine）中类的生命周期包含以下 5 个阶段(有时也被称为7个阶段)：</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E5%8A%A0%E8%BD%BD"><span class="toc-number">1.1.1.</span> <span class="toc-text">1、加载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E9%93%BE%E6%8E%A5"><span class="toc-number">1.1.2.</span> <span class="toc-text">2、链接</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.1.3.</span> <span class="toc-text">3、初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E4%BD%BF%E7%94%A8"><span class="toc-number">1.1.4.</span> <span class="toc-text">4、使用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5%E3%80%81%E5%8D%B8%E8%BD%BD"><span class="toc-number">1.1.5.</span> <span class="toc-text">5、卸载</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6"><span class="toc-number">1.2.</span> <span class="toc-text">二、双亲委派机制</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/03/26/Jvm%20%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/" title="Jvm的类的生命周期与双亲委派机制"><img src="/img/%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jvm的类的生命周期与双亲委派机制"/></a><div class="content"><a class="title" href="/2025/03/26/Jvm%20%E7%B1%BB%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/" title="Jvm的类的生命周期与双亲委派机制">Jvm的类的生命周期与双亲委派机制</a><time datetime="2025-03-26T15:35:00.000Z" title="发表于 2025-03-26 23:35:00">2025-03-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/03/20/2025-3-20-%E7%AC%AC%E4%B8%80%E7%AF%87/" title="如何瞄准"><img src="/img/1.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="如何瞄准"/></a><div class="content"><a class="title" href="/2025/03/20/2025-3-20-%E7%AC%AC%E4%B8%80%E7%AF%87/" title="如何瞄准">如何瞄准</a><time datetime="2025-03-20T13:00:00.000Z" title="发表于 2025-03-20 21:00:00">2025-03-20</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/双亲委派.jpg);"><div id="footer-wrap"><div class="copyright">&copy;2023 - 2025 By fly1zr</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.3.5</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="無,駄" data-fontsize="15px" data-random="true" async="async"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
